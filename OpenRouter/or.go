@@ -11,26 +11,19 @@ import (
 	"github.com/KO6BXL/ai"
 )
 
-type DataCollection int
-
-const (
-	Allow DataCollection = iota
-	Deny
-)
-
 const OR_CompletionsURL = "https://openrouter.ai/api/v1/chat/completions"
 
 type Provider struct {
-	Order                  []string       `json:"order"`
-	AllowFallbacks         bool           `json:"allow_fallbacks"`
-	RequireParameters      bool           `json:"require_parameters"`
-	DataCollection         DataCollection `json:"data_collection"`
-	Zdr                    bool           `json:"zdr"`
-	EnforceDistillableText bool           `json:"enforce_distillable_text"`
-	Only                   []string       `json:"only"`
-	Ignore                 []string       `json:"ignore"`
-	Quantizations          []string       `json:"quatizations"`
-	Sort                   string         `json:"sort"`
+	Order                  []string `json:"order"`
+	AllowFallbacks         bool     `json:"allow_fallbacks"`
+	RequireParameters      bool     `json:"require_parameters"`
+	DataCollection         string   `json:"data_collection"`
+	Zdr                    bool     `json:"zdr"`
+	EnforceDistillableText bool     `json:"enforce_distillable_text"`
+	Only                   []string `json:"only"`
+	Ignore                 []string `json:"ignore"`
+	Quantizations          []string `json:"quantizations"`
+	Sort                   string   `json:"sort"`
 }
 
 type or_Mesg struct {
@@ -41,6 +34,7 @@ type or_Mesg struct {
 type or_Request struct {
 	Messages []or_Mesg `json:"messages"`
 	Model    string    `json:"model"`
+	Provider Provider  `json:"provider"`
 }
 
 type OpenRouter struct {
@@ -88,8 +82,19 @@ func NewOR(model string, apiKey string) *OpenRouter {
 	return ctx
 }
 
-func (or *OpenRouter) SetProviders(provder Provider) {
-	or.Provider = provder
+func (or *OpenRouter) SetProviders(provider Provider) {
+	if provider.DataCollection == "" {
+		provider.DataCollection = "allow"
+	}
+	if provider.Sort == "" {
+		provider.Sort = "price"
+	}
+
+	if len(provider.Quantizations) == 0 {
+		provider.Quantizations = []string{"int4", "int8", "fp4", "fp6", "fp8", "fp16", "bf16", "fp32", "unknown"}
+	}
+
+	or.Provider = provider
 }
 
 func (or *OpenRouter) Request(ctx ai.Context) (ai.Response, error) {
@@ -113,6 +118,7 @@ func (or *OpenRouter) Request(ctx ai.Context) (ai.Response, error) {
 	reqO := or_Request{
 		Messages: msg,
 		Model:    or.Model,
+		Provider: or.Provider,
 	}
 	reqB, err := json.Marshal(reqO)
 	if err != nil {

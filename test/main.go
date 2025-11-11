@@ -32,6 +32,7 @@ func main() {
 	or := openrouter.NewOR("deepseek/deepseek-v3.2-exp", gimmeKey())
 	or.SetProviders(openrouter.Provider{DataCollection: "allow", Only: []string{"deepseek"}})
 	AI := ai.NewAI(or)
+	AI.Prompt("When responding, respond in a western, rancher way.")
 	resp, err := AI.Message("What is the square root of pi?")
 	if err != nil || resp.Id == "" {
 		log.Fatal(err)

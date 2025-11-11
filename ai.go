@@ -45,7 +45,17 @@ func NewAI(driver Driver) *AI {
 	return &AI{ctx, driver}
 }
 
+func (ai *AI) Prompt(message string) {
+	ai.ctx.Messages = append(ai.ctx.Messages, Message{Role: "system", Content: message})
+}
+
 func (ai *AI) Message(message string) (Response, error) {
 	ai.ctx.Messages = append(ai.ctx.Messages, Message{Role: "user", Content: message})
-	return ai.driver.Request(ai.ctx)
+
+	resp, err := ai.driver.Request(ai.ctx)
+	if err != nil {
+		return resp, err
+	}
+	ai.ctx.Messages = append(ai.ctx.Messages, Message{Role: "assistant", Content: resp.Outputs[len(resp.Outputs)-1].Message.Content})
+	return resp, err
 }
